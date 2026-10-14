@@ -88,7 +88,18 @@ unzip -qo "$PAR2_ZIP" par2 -d "$APPDIR/usr/bin"
 
 echo ">> unrar ${UNRAR_VERSION}"
 tar xzf "$UNRAR_TGZ" -C "$WORK" rar/unrar rar/license.txt
-install -m755 "$WORK/rar/unrar" "$APPDIR/usr/bin/unrar"
+# RARLAB's license only allows redistributing unrar unmodified, so the binary
+# is shipped as-is. A wrapper points it at the bundled libstdc++ instead.
+mkdir -p "$APPDIR/usr/lib/unrar"
+install -m755 "$WORK/rar/unrar" "$APPDIR/usr/lib/unrar/unrar"
+ln -s ../../python/lib/libstdc++.so.6 "$APPDIR/usr/lib/unrar/libstdc++.so.6"
+ln -s ../../python/lib/libgcc_s.so.1 "$APPDIR/usr/lib/unrar/libgcc_s.so.1"
+cat > "$APPDIR/usr/bin/unrar" <<'EOF'
+#!/bin/sh
+LIBDIR="$(dirname "$(readlink -f "$0")")/../lib/unrar"
+LD_LIBRARY_PATH="$LIBDIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" exec "$LIBDIR/unrar" "$@"
+EOF
+chmod +x "$APPDIR/usr/bin/unrar"
 mkdir -p "$APPDIR/usr/share/licenses/unrar"
 cp "$WORK/rar/license.txt" "$APPDIR/usr/share/licenses/unrar/"
 
@@ -104,10 +115,9 @@ find "$PYROOT" -type f \( -name '*.so*' -o -path '*/bin/*' \) -print0 \
     | xargs -0 file | grep -E ':.*ELF.*not stripped' | cut -d: -f1 \
     | xargs -r strip --strip-unneeded
 
-echo ">> Point C++ binaries at the bundled libstdc++"
+echo ">> Point C++ Python modules at the bundled libstdc++"
 "$PY" -m pip install -q --disable-pip-version-check --target "$WORK/tools" patchelf
 PATCHELF="$WORK/tools/bin/patchelf"
-"$PATCHELF" --force-rpath --set-rpath '$ORIGIN/../python/lib' "$APPDIR/usr/bin/unrar"
 find "$SITE" -name '*.so' | while read -r so; do
     if objdump -p "$so" | grep -q 'NEEDED.*libstdc++'; then
         rel=$("$PY" -c 'import os,sys;print(os.path.relpath(sys.argv[1],os.path.dirname(sys.argv[2])))' "$PYROOT/lib" "$so")
@@ -149,4 +159,6 @@ echo "   highest symbol version needed: $maxv"
 echo ">> Building AppImage"
 rm -f "$OUT"
 ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run --no-appstream "$APPDIR" "$OUT"
+# unrar must be byte-identical to RARLAB's release
+cmp "$WORK/rar/unrar" "$APPDIR/usr/lib/unrar/unrar"
 echo ">> Done: $OUT"

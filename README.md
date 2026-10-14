@@ -1,5 +1,7 @@
 # sabnzbd-AppImage
 
+Ready-made AppImages are on the [Releases](https://github.com/sanderjo/sabnzbd-AppImage/releases) page.
+
 Build a self-contained [SABnzbd](https://sabnzbd.org) AppImage that runs on
 (almost) any x86_64 Linux distribution: anything with glibc 2.17 or newer
 (CentOS 7, Ubuntu 14.04, Debian 8 and later).
@@ -53,6 +55,16 @@ uploads it as a workflow artifact. To build a specific release (e.g. a beta), us
 gh workflow run build.yml -f sabnzbd_version=5.2.0Beta2
 ```
 
+To publish a GitHub Release, tick *Publish the AppImage as a GitHub Release* when
+running the workflow, or:
+
+```sh
+gh workflow run build.yml -f sabnzbd_version=5.2.0Beta2 -f release=true
+```
+
+The release is tagged with the SABnzbd version; alpha, beta and RC versions are
+marked as pre-releases. Running it again for the same version replaces the AppImage.
+
 If a future SABnzbd release adds a dependency that is only published as source
 (sdist) on PyPI, the dependency step stops with an error. Add it to the
 `pip wheel` line in `build.sh`, as is done for `sgmllib3k`.
@@ -60,6 +72,7 @@ If a future SABnzbd release adds a dependency that is only published as source
 ## Licenses
 
 SABnzbd is GPL-licensed. unrar is freeware from RARLAB; its license
-(included in the AppImage under `usr/share/licenses/unrar`) allows redistribution
-of the unmodified binary. The build changes its library search path (RPATH) so it
-finds the bundled libstdc++; keep this in mind before redistributing built AppImages.
+(included in the AppImage under `usr/share/licenses/unrar`) allows distributing
+the UnRAR components as long as they are not modified. The AppImage therefore ships
+RARLAB's `unrar` binary byte-for-byte unchanged (the build verifies this); a small
+wrapper script makes it use the bundled libstdc++.

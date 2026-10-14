@@ -11,10 +11,16 @@ on:
         description: "SABnzbd release tag, e.g. 5.2.0Beta2 (empty = default from build.sh)"
         required: false
         default: ""
+      release:
+        description: "Publish the AppImage as a GitHub Release (tag = SABnzbd version)"
+        type: boolean
+        default: false
 
 jobs:
   build:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write   # only used by the release step
     env:
       SABNZBD_VERSION: ${{ inputs.sabnzbd_version }}
     steps:
@@ -58,3 +64,34 @@ jobs:
           archive: false
           path: SABnzbd-*-x86_64.AppImage
           if-no-files-found: error
+
+      - name: Publish release
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          appimage=$(ls SABnzbd-*-x86_64.AppImage)
+          version=${appimage#SABnzbd-}
+          version=${version%-x86_64.AppImage}
+          flags=()
+          case "$version" in *[Aa]lpha*|*[Bb]eta*|*RC*) flags+=(--prerelease) ;; esac
+          v() { grep -m1 "^$1=" build.sh | cut -d'"' -f2; }
+          cat > notes.md <<EOF
+          Self-contained SABnzbd ${version} for x86_64 Linux (glibc 2.17 or newer).
+
+          Includes Python $(v PYTHON_VERSION), unrar $(v UNRAR_VERSION | sed 's/./&./'), \
+          par2cmdline-turbo $(v PAR2_VERSION) and 7-Zip $(v SEVENZIP_TAG).
+
+          \`\`\`sh
+          chmod +x ${appimage}
+          ./${appimage}
+          \`\`\`
+
+          SABnzbd release notes: https://github.com/sabnzbd/sabnzbd/releases/tag/${version}
+          EOF
+          if gh release view "$version" >/dev/null 2>&1; then
+            gh release upload "$version" "$appimage" --clobber
+          else
+            gh release create "$version" "$appimage" --target "$GITHUB_SHA" \
+              --title "SABnzbd $version" --notes-file notes.md "${flags[@]}"
+          fi
