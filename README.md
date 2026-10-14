@@ -33,11 +33,12 @@ Ready-made AppImages are under **Releases** on the right-hand side of this page
    chmod +x SABnzbd-5.1.3-x86_64.AppImage
    ```
 
-Or from the command line:
+Or from the command line, which always fetches the latest stable release:
 
 ```sh
-wget https://github.com/sanderjo/sabnzbd-AppImage/releases/download/5.1.3/SABnzbd-5.1.3-x86_64.AppImage
-chmod +x SABnzbd-5.1.3-x86_64.AppImage
+url=$(curl -s https://api.github.com/repos/sanderjo/sabnzbd-AppImage/releases/latest | grep -o 'https://[^"]*\.AppImage' | head -1)
+wget "$url"
+chmod +x "$(basename "$url")"
 ```
 
 ## Usage
