@@ -1,0 +1,58 @@
+name: Build AppImage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      sabnzbd_version:
+        description: "SABnzbd release tag, e.g. 5.2.0Beta2 (empty = default from build.sh)"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      SABNZBD_VERSION: ${{ inputs.sabnzbd_version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Cache downloads
+        uses: actions/cache@v6
+        with:
+          path: downloads
+          key: downloads-${{ hashFiles('build.sh') }}-${{ inputs.sabnzbd_version }}
+          restore-keys: downloads-
+
+      - name: Build
+        run: |
+          # An empty SABNZBD_VERSION must not override the default in build.sh
+          [ -n "$SABNZBD_VERSION" ] || unset SABNZBD_VERSION
+          ./build.sh
+
+      - name: Smoke test
+        run: |
+          appimage=$(ls SABnzbd-*-x86_64.AppImage)
+          cfg="$RUNNER_TEMP/sabnzbd"
+          mkdir -p "$cfg"
+          # Runners have no FUSE, so let the AppImage extract itself
+          "./$appimage" --appimage-extract-and-run -f "$cfg/sabnzbd.ini" -s 127.0.0.1:8080 -b 0 -l 2 &
+          for i in $(seq 60); do
+            curl -sf "http://127.0.0.1:8080/api?mode=version&output=json" && break
+            sleep 1
+          done
+          echo
+          log="$cfg/logs/sabnzbd.log"
+          for want in "linked to OpenSSL: True" "par2 binary... found" "UNRAR binary... found" "7za binary... found"; do
+            grep -F "$want" "$log" || { echo "::error::Missing in log: $want"; cat "$log"; exit 1; }
+          done
+          kill %1
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v7
+        with:
+          name: SABnzbd-AppImage-x86_64
+          path: SABnzbd-*-x86_64.AppImage
+          if-no-files-found: error
