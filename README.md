@@ -1,7 +1,5 @@
 # sabnzbd-AppImage
 
-Ready-made AppImages are on the [Releases](https://github.com/sanderjo/sabnzbd-AppImage/releases) page.
-
 Build a self-contained [SABnzbd](https://sabnzbd.org) AppImage that runs on
 (almost) any x86_64 Linux distribution: anything with glibc 2.17 or newer
 (CentOS 7, Ubuntu 14.04, Debian 8 and later).
@@ -20,6 +18,27 @@ The AppImage bundles everything SABnzbd needs:
 conda-forge's Python is used instead of python-build-standalone because the latter
 links OpenSSL statically with hidden symbols. That prevents sabctools from using
 its faster SSL download path, and SABnzbd shows a warning about it.
+
+## Download
+
+Ready-made AppImages are under **Releases** on the right-hand side of this page
+(or go directly to the [Releases page](https://github.com/sanderjo/sabnzbd-AppImage/releases)).
+
+1. Open the release you want: the one marked *Latest* is the current stable
+   SABnzbd version; *Pre-release* versions are alphas, betas and release candidates.
+2. Under **Assets**, download `SABnzbd-<version>-x86_64.AppImage`.
+3. Make the downloaded file executable (browsers don't keep that permission):
+
+   ```sh
+   chmod +x SABnzbd-5.1.3-x86_64.AppImage
+   ```
+
+Or from the command line:
+
+```sh
+wget https://github.com/sanderjo/sabnzbd-AppImage/releases/download/5.1.3/SABnzbd-5.1.3-x86_64.AppImage
+chmod +x SABnzbd-5.1.3-x86_64.AppImage
+```
 
 ## Usage
 
