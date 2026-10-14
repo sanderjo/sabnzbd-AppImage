@@ -30,7 +30,7 @@ Ready-made AppImages are under **Releases** on the right-hand side of this page
 3. Make the downloaded file executable (browsers don't keep that permission):
 
    ```sh
-   chmod +x SABnzbd-5.1.3-x86_64.AppImage
+   chmod +x SABnzbd*-x86_64.AppImage
    ```
 
 Or from the command line, which always fetches the latest stable release:
