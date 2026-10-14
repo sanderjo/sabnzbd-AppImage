@@ -43,6 +43,16 @@ Downloads are cached in `downloads/`, the AppDir is assembled in `build/`, and t
 AppImage is written to the repository root. Versions of the bundled tools are set
 at the top of `build.sh`.
 
+### GitHub Actions
+
+Every push and pull request builds the AppImage, starts it as a smoke test, and
+uploads it as a workflow artifact. To build a specific release (e.g. a beta), use
+*Actions → Build AppImage → Run workflow* and enter the version, or:
+
+```sh
+gh workflow run build.yml -f sabnzbd_version=5.2.0Beta2
+```
+
 If a future SABnzbd release adds a dependency that is only published as source
 (sdist) on PyPI, the dependency step stops with an error. Add it to the
 `pip wheel` line in `build.sh`, as is done for `sgmllib3k`.
