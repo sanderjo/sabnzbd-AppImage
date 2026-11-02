@@ -76,8 +76,13 @@ grep -vE '^\s*(notify2)\b' "$SRC/requirements.txt" > "$WORK/requirements.txt"
 PLATFORMS=()
 for t in manylinux1 manylinux2010 manylinux2014; do PLATFORMS+=(--platform "${t}_x86_64"); done
 for i in $(seq 5 "$MAX_GLIBC_MINOR"); do PLATFORMS+=(--platform "manylinux_2_${i}_x86_64"); done
-# sgmllib3k is sdist-only (pure Python): turn it into a wheel first
-"$PY" -m pip wheel -q --disable-pip-version-check --no-deps -w "$WORK/wheels" sgmllib3k==1.0.0
+# Some pins are sdist-only (pure Python): turn them into wheels first, at the
+# version requirements.txt pins
+for pkg in sgmllib3k paho-mqtt; do
+    spec=$(grep -ioE "^\s*${pkg}\s*==\s*[^ ;#]+" "$WORK/requirements.txt" | tr -d ' ' || true)
+    [ -n "$spec" ] || continue
+    "$PY" -m pip wheel -q --disable-pip-version-check --no-deps -w "$WORK/wheels" "$spec"
+done
 "$PY" -m pip install -q --disable-pip-version-check --no-compile --upgrade \
     --target "$SITE" --find-links "$WORK/wheels" \
     --only-binary=:all: --implementation cp --python-version "$PY_MM" "${PLATFORMS[@]}" \
